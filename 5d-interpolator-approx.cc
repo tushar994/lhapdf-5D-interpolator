@@ -377,10 +377,86 @@ double interpolate_q(double q, double* values , int n, int type){
 }
 
 // --------------------------------------------- NEW SHIT
+double six_point_inter(double x, double* values, double* x_val){
+    double a[6];
+    for(int i=0;i<6;i++){
+        a[i] = values[i];
+    }
+    double y1 = a[2];
+    double y2 = a[3];
+    double dy1,dy2;
+    
+    double dy1_1 = (a[2] - a[1]) / (x_val[2] - x_val[1]);
+    double dy1_2 = (a[3] - a[2]) / (x_val[3] - x_val[2]);
+    dy1 = ((dy1_2*(x_val[2] - x_val[1]))/(x_val[3] - x_val[1])) + ((dy1_1*(x_val[3] - x_val[2]))/(x_val[3] - x_val[1]));
+
+    double dy2_2 = (a[4] - a[3]) / (x_val[4] - x_val[3]);
+    double dy2_1 = (a[3] - a[2]) / (x_val[3] - x_val[2]);
+    dy2 = ((dy2_2*(x_val[3] - x_val[2]))/(x_val[4] - x_val[2])) + ((dy2_1*(x_val[4] - x_val[3]))/(x_val[4] - x_val[2]));
+
+    // cout<<"index - ";
+    // cout<<x_i[0]<<" ";
+    // for(int i=0;i<4;i++){
+        // cout<<x_i[i]<<" ";
+    // }
+    // cout<<x_i[5]<<"\n";
+    double ddy1, ddy2;
+    double dd_x1,dd_x3;
+    dd_x1 = 2*(((a[2] - a[1]) / (x_val[2] - x_val[1])) - ((a[1]-a[0])/(x_val[1] - x_val[0])))/(x_val[2] - x_val[0]);
+    dd_x3 = 2*(((a[4] - a[3]) / (x_val[4] - x_val[3])) - ((a[3] - a[2]) / (x_val[3] - x_val[2])))/(x_val[4] - x_val[2]);
+
+    ddy1 = ((dd_x1*(x_val[3]-x_val[2]))+(dd_x3*(x_val[2]-x_val[1])))/(x_val[3]-x_val[1]);
 
 
+    // for the second derivative as x3
+    double dd_x2,dd_x4;
+    dd_x4 = (((a[5]-a[4])/(x_val[5] - x_val[4])) - ((a[4] - a[3]) / (x_val[4] - x_val[3])))/((x_val[5] - x_val[3])/2);
+    dd_x2 = 2*(((a[3] - a[2]) / (x_val[3] - x_val[2])) - ((a[3] - a[2]) / (x_val[2] - x_val[1])))/(x_val[3] - x_val[1]);
+    
+    // cout<<dd_x2<<" "<<dd_x4<<" are the second derivatives things\n";
+    ddy2 = ((dd_x2*(x_val[4]-x_val[3]))+(dd_x4*(x_val[3]-x_val[2])))/(x_val[4]-x_val[2]);
+
+    return solve_system(x,x_val[2],x_val[3],y1,y2,dy1,dy2,ddy1,ddy2);
+}
+
+double linear_inter(double x, double* values, double* x_val){
+    double y1 = values[0];
+    double y2 = values[1];
+    double x1 = x_val[0];
+    double x2 = x_val[1];
+    return y1 + (y2-y1)*(x-x1)/(x2-x1);
+}
+
+double four_point_inter(double x, double* values, double* x_val){
+    double a[4];
+    for(int i=0;i<4;i++){
+        a[i] = values[i];
+    }
+
+    double y1 = a[1];
+    double y2 = a[2];
+    double dy1,dy2;
+    double dy1_1 = (a[1] - a[0]) / (x_val[1] - x_val[0]);
+    double dy1_2 = (a[2] - a[1]) / (x_val[2] - x_val[1]);
+    dy1 = ((dy1_2*(x_val[1] - x_val[0]))/(x_val[2] - x_val[0])) + ((dy1_1*(x_val[2] - x_val[1]))/(x_val[2] - x_val[0]));
+
+    double dy2_2 = (a[3] - a[2]) / (x_val[3] - x_val[2]);
+    double dy2_1 = (a[2] - a[1]) / (x_val[2] - x_val[1]);
+    dy2 = ((dy2_2*(x_val[2] - x_val[1]))/(x_val[3] - x_val[1])) + ((dy2_1*(x_val[3] - x_val[2]))/(x_val[3] - x_val[1]));
 
 
+    double ddy1, ddy2;
+
+    // if type = 0, then we get second derivative with only four points
+    ddy1 = 2*(((a[2] - a[1]) / (x_val[2] - x_val[1])) - ((a[1] - a[0]) / (x_val[1] - x_val[0])))/(x_val[2] - x_val[0]);
+    ddy2 = 2*(((a[3] - a[2]) / (x_val[3] - x_val[2])) - ((a[2] - a[1]) / (x_val[2] - x_val[1])))/(x_val[3] - x_val[1]);
+
+    // cout<<"second\n";
+    // cout<<"second derivatives are - "<<ddy1<<" "<<ddy2<<"\n";
+
+    return solve_system(x,x_val[1],x_val[2],y1,y2,dy1,dy2,ddy1,ddy2);
+
+}
 
 
 
@@ -404,6 +480,10 @@ double interpolate(double x, double q, int flavour, int type){
             q_a2[i] = return_index(q_i, q_size-1, 0, i-2);
         }
     }
+    // for(int i=0;i<6;i++){
+    //     cout<<x_a2[i]<<" ";
+    // }
+    // cout<<"\n";
 
     // now we have all four coordinates for x, q
     double values[4];
@@ -411,24 +491,106 @@ double interpolate(double x, double q, int flavour, int type){
     // we interpolate along x four times for the relevant values of q and store the obtained values
     // cout<<"values are\n";
     if(type==0){
-        for(int i=0;i<4;i++){
-            values[i] = interpolate_x(x,q_a[i],n,flavour,type);
-            // cout<<values[i]<<" ";
+        if(x_a[0]==x_a[1]||x_a[2]==x_a[3]){
+            // degrenate to linear
+            // cout<<"here\n";
+            double x_vals[2];
+            x_vals[0] = x_arr[x_a[1]];
+            x_vals[1] = x_arr[x_a[2]];
+            for(int i=0;i<4;i++){
+                double vals[2];
+                vals[0] = get_val(x_a[1],q_a[i],0);
+                vals[1] = get_val(x_a[2],q_a[i],0);
+                values[i] = linear_inter(x,vals,x_vals);
+            }
+        }
+        else{
+            double x_vals[4];
+            for(int i=0;i<4;i++){
+                x_vals[i]= x_arr[x_a[i]];
+            }
+            for(int i=0;i<4;i++){
+                double vals[4];
+                for(int j=0;j<4;j++){
+                    vals[j] = get_val(x_a[j],q_a[i],0);
+                }
+                values[i] = four_point_inter(x,vals,x_vals);
+                // cout<<values[i]<<" ";
+            }
         }
     }
     else if(type==1){
-        for(int i=0;i<6;i++){
-            values2[i] = interpolate_x(x,q_a2[i],n,flavour,type);
-            // cout<<values[i]<<" ";
+        if(x_a2[0]==x_a2[1]||x_a2[4]==x_a2[5]){
+            // degrenate to linear
+            // cout<<"here\n";
+            double x_vals[2];
+            x_vals[0] = x_arr[x_a2[2]];
+            x_vals[1] = x_arr[x_a2[3]];
+            for(int i=0;i<6;i++){
+                double vals[2];
+                vals[0] = get_val(x_a2[2],q_a2[i],0);
+                vals[1] = get_val(x_a2[3],q_a2[i],0);
+                values2[i] = linear_inter(x,vals,x_vals);
+            }
+        }
+        // normal 6 point interpolation
+        else{
+            double x_vals[6];
+            for(int i=0;i<6;i++){
+                x_vals[i]= x_arr[x_a2[i]];
+            }
+            for(int i=0;i<6;i++){
+                double vals[6];
+                for(int j=0;j<6;j++){
+                    vals[j] = get_val(x_a2[j],q_a2[i],0);
+                }
+                values2[i] = six_point_inter(x,vals,x_vals);
+                // cout<<values[i]<<" ";
+            }
         }
     }
     // cout<<"\n";
     // Using the four values obtained we interpolate along q
+
     if(type==0){
-        return interpolate_q(q,values, n,type);
+        if(q_a[0]==q_a[1]||q_a[2]==q_a[3]){
+            // degrenate to linear
+            // cout<<"here\n";
+            double q_vals[2];
+            q_vals[0] = q_arr[q_a[1]];
+            q_vals[1] = q_arr[q_a[2]];
+            double vals[2];
+            vals[0] = values[1];
+            vals[1] = values[2];
+            return linear_inter(q,vals,q_vals);
+        }
+        else{
+            double q_vals[4];
+            for(int i=0;i<4;i++){
+                q_vals[i]= q_arr[q_a[i]];
+            }
+            return four_point_inter(q,values,q_vals);
+        }
     }
     else if(type==1){
-        return interpolate_q(q,values2, 6,type);
+        // return interpolate_q(q,values2, 6,type);
+        if(q_a2[0]==q_a2[1]||q_a2[4]==q_a2[5]){
+            // degrenate to linear
+            double q_vals[2];
+            q_vals[0] = q_arr[q_a2[2]];
+            q_vals[1] = q_arr[q_a2[3]];
+            double vals[2];
+            vals[0] = values2[2];
+            vals[1] = values2[3];
+            return linear_inter(q,vals,q_vals);
+        }
+        else{
+            double q_vals[6];
+            for(int i=0;i<6;i++){
+                q_vals[i]= q_arr[q_a2[i]];
+            }
+            return six_point_inter(q,values2,q_vals);
+        }
     }
 
 }
@@ -540,7 +702,7 @@ double interpolate(double x, double q, int flavour, int type){
 
     double x_val = -20;
     double q_val = 0.5;
-    // cout<<interpolate(exp(-17),exp(1),0,1)<<"\n";
+    // cout<<interpolate((-0.4),(1),0,1)<<"\n";
     MyFile<<"lnx,lnq,xf\n";
     while(q_val<10){
         x_val = -18;
