@@ -14,7 +14,7 @@ int q_size = 20;
 double q_arr[20], x_arr[91]; 
 double xf[20*91][3];
 
-
+// This helps find the greatest x-value in the dataset below a given x value
 int x_binary(int min, int max, double val){
     while(max-min>1){
         int mid  = (min+max)/2; 
@@ -27,11 +27,11 @@ int x_binary(int min, int max, double val){
     }
     return min;
 }
-
+// This finds the greatest x-value in the dataset below a given x value
 int x_index(double x){
     return x_binary(0,x_size-1,x);
 }
-
+// This finds the greatest q-value in the dataset below a given q value
 int q_binary(int min, int max, double val){
     while(max-min>1){
         int mid  = (min+max)/2; 
@@ -44,11 +44,12 @@ int q_binary(int min, int max, double val){
     }
     return min;
 }
-
+// This finds the greatest q-value in the dataset below a given q value
 int q_index(double x){
     return q_binary(0,q_size-1,x);
 }
-
+// This returns index+add, unless index+add is an invalid value,
+//  in which case it gives max or min depending on how indes+add overflowed
 int return_index(int index, int max, int min, int add){
     if(index+add < min){
         return min;
@@ -61,12 +62,14 @@ int return_index(int index, int max, int min, int add){
     }
 
 }   
-
+// This gives the xf value given the flavour, the x value's index in the 
+// dataset and q value's index in the given dataset
 double get_val(int x_index, int q_index, int flavour){
     int index = x_index*q_size + q_index;
     return xf[index][flavour];
 }
-
+// given a system of equations, this function solves it and gives the 
+// outupt of the polynomial obtained
 double solve_system(double x,double x1, double x2, double y1, double y2, double dy1, double dy2, double ddy1, double ddy2){
     Eigen::Matrix <double, 1,7> equations[6];
     
@@ -165,7 +168,7 @@ double solve_system(double x,double x1, double x2, double y1, double y2, double 
     return ans;
 
 }
-
+// this function, given any x value, and a q values index in the dataset, interpolates along x
 double interpolate_x(double x, int q_i, int n, int flavour, int type){
     int x_i[n];
     int index1 = x_index(x);
@@ -198,7 +201,7 @@ double interpolate_x(double x, int q_i, int n, int flavour, int type){
     else{
         double dy2_2 = (a[3] - a[2]) / (x_arr[x_i[3]] - x_arr[x_i[2]]);
         double dy2_1 = (a[2] - a[1]) / (x_arr[x_i[2]] - x_arr[x_i[1]]);
-        dy1 = ((dy2_2*(x_arr[x_i[2]] - x_arr[x_i[1]]))/(x_arr[x_i[3]] - x_arr[x_i[1]])) + ((dy2_1*(x_arr[x_i[3]] - x_arr[x_i[2]]))/(x_arr[x_i[3]] - x_arr[x_i[1]]));
+        dy2 = ((dy2_2*(x_arr[x_i[2]] - x_arr[x_i[1]]))/(x_arr[x_i[3]] - x_arr[x_i[1]])) + ((dy2_1*(x_arr[x_i[3]] - x_arr[x_i[2]]))/(x_arr[x_i[3]] - x_arr[x_i[1]]));
     }
 
     // calculate second derivative
@@ -218,6 +221,7 @@ double interpolate_x(double x, int q_i, int n, int flavour, int type){
         else{
             ddy2 = 2*(((a[3] - a[2]) / (x_arr[x_i[3]] - x_arr[x_i[2]])) - ((a[2] - a[1]) / (x_arr[x_i[2]] - x_arr[x_i[1]])))/(x_arr[x_i[3]] - x_arr[x_i[1]]);
         }
+        // cout<<"second\n";
         // cout<<"second derivatives are - "<<ddy1<<" "<<ddy2<<"\n";
     }
     else if(type==1){
@@ -268,7 +272,8 @@ double interpolate_x(double x, int q_i, int n, int flavour, int type){
     
     return solve_system(x,x_arr[x_i[1]],x_arr[x_i[2]],y1,y2,dy1,dy2,ddy1,ddy2);
 }
-
+// this function, given any q value, and the values that were gained from interpolation in the x direction, 
+// gives the final interpolation value
 double interpolate_q(double q, double* values , int n, int type){
     int q_i[4];
     int index1 = q_index(q);
@@ -308,7 +313,7 @@ double interpolate_q(double q, double* values , int n, int type){
     else{
         double dy2_2 = (a[3] - a[2]) / (q_arr[q_i[3]] - q_arr[q_i[2]]);
         double dy2_1 = (a[2] - a[1]) / (q_arr[q_i[2]] - q_arr[q_i[1]]);
-        dy1 = ((dy2_2*(q_arr[q_i[2]] - q_arr[q_i[1]]))/(q_arr[q_i[3]] - q_arr[q_i[1]])) + ((dy2_1*(q_arr[q_i[3]] - q_arr[q_i[2]]))/(q_arr[q_i[3]] - q_arr[q_i[1]]));
+        dy2 = ((dy2_2*(q_arr[q_i[2]] - q_arr[q_i[1]]))/(q_arr[q_i[3]] - q_arr[q_i[1]])) + ((dy2_1*(q_arr[q_i[3]] - q_arr[q_i[2]]))/(q_arr[q_i[3]] - q_arr[q_i[1]]));
     }
 
     // calculate second derivative
@@ -371,6 +376,16 @@ double interpolate_q(double q, double* values , int n, int type){
     
 }
 
+// --------------------------------------------- NEW SHIT
+
+
+
+
+
+
+
+// ---------------------------------------------
+// this is the main function from which all interpolation is called
 double interpolate(double x, double q, int flavour, int type){
     int x_i = x_index(x);
     int q_i = q_index(q);
@@ -521,7 +536,7 @@ double interpolate(double x, double q, int flavour, int type){
     // }
     // cout<<"\n";
     // cout<<get_val(1,1,0)<<" is the val\n";
-    ofstream MyFile("./desne-grids/6-points.csv");
+    ofstream MyFile("./custom_func_data/4-points.csv");
 
     double x_val = -20;
     double q_val = 0.5;
@@ -530,11 +545,11 @@ double interpolate(double x, double q, int flavour, int type){
     while(q_val<10){
         x_val = -18;
         while(x_val<0){
-            MyFile<<x_val<<","<<q_val<<","<<interpolate(exp(x_val),exp(q_val),0,1)<<"\n";
+            MyFile<<x_val<<","<<q_val<<","<<interpolate((x_val),(q_val),0,0)<<"\n";
             // cout<<x_val<<"\r";
-            x_val+=0.001;
+            x_val+=0.01;
         }
-        q_val+=0.5;
+        q_val+=0.05;
         cout<<q_val<<"\n";
     }
     MyFile.close();
